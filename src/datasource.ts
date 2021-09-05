@@ -45,8 +45,7 @@ export class BigQueryDatasource {
     return SqlParser.getProjectDatasetTableFromSql(sql);
   }
 
-  public static _FindTimeField(sql, timeFields) {
-    console.log("searching time field in ", sql, timeFields);
+  public static _FindTimeField(sql) {
     const select = sql.search(/select/i);
     const from = sql.search(/from/i);
     const fields = sql.substring(select + 6, from);
@@ -66,11 +65,7 @@ export class BigQueryDatasource {
       col = col.replace(/\$__millisTimeTo\(/g, '');
       col = col.replace(/\$__millisTimeFrom\(/g, '');
       console.log("checking line for timefield", col);
-      for (const fl of timeFields) {
-        if (fl.text === col) {
-          return fl;
-        }
-      }
+      return col;  
     }
     return null;
   }
@@ -253,7 +248,7 @@ export class BigQueryDatasource {
         // Fix raw sql
         const sqlWithNoVariables = this.templateSrv.replace(tmpQ, options.scopedVars, this.interpolateVariable);
         const info = BigQueryDatasource._extractFromClause(sqlWithNoVariables);
-            this.queryModel.target.timeColumn = null;
+            this.queryModel.target.timeColumn = BigQueryDatasource._FindTimeField(sqlWithNoVariables);
             this.queryModel.target.timeColumnType = "DATETIME";
             this.queryModel.target.table = info[2];
 	    

@@ -11,6 +11,7 @@ export default class BigQueryQuery {
   }
 
   public static quoteFiledName(value) {
+   return value;
     const vals = value.split('.');
     let res = '';
     for (let i = 0; i < vals.length; i++) {
