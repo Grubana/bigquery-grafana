@@ -55,6 +55,7 @@ export default class BigQueryQuery {
     if (str === undefined) {
       return 0;
     }
+    str = str.replaceAll("'","").trim()
     const res = BigQueryDatasource._getShiftPeriod(str);
     const groupPeriod = res[0];
     const groupVal = res[1];
@@ -588,7 +589,7 @@ export default class BigQueryQuery {
   }
 
   private _dateToTimestamp() {
-    if (this.target.timeColumnType === 'DATE') {
+    if (this.target.timeColumnType === 'DATE' || this.target.timeColumnType === 'DATETIME') {
       return 'Timestamp(' + BigQueryQuery.quoteFiledName(this.target.timeColumn) + ')';
     }
     return BigQueryQuery.quoteFiledName(this.target.timeColumn);

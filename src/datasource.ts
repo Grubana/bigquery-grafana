@@ -46,6 +46,7 @@ export class BigQueryDatasource {
   }
 
   public static _FindTimeField(sql, timeFields) {
+    console.log("searching time field in ", sql, timeFields);
     const select = sql.search(/select/i);
     const from = sql.search(/from/i);
     const fields = sql.substring(select + 6, from);
@@ -64,6 +65,7 @@ export class BigQueryDatasource {
       col = col.replace(/\$__timeTo\(/g, '');
       col = col.replace(/\$__millisTimeTo\(/g, '');
       col = col.replace(/\$__millisTimeFrom\(/g, '');
+      console.log("checking line for timefield", col);
       for (const fl of timeFields) {
         if (fl.text === col) {
           return fl;
@@ -251,23 +253,26 @@ export class BigQueryDatasource {
         // Fix raw sql
         const sqlWithNoVariables = this.templateSrv.replace(tmpQ, options.scopedVars, this.interpolateVariable);
         const [project, dataset, table] = BigQueryDatasource._extractFromClause(sqlWithNoVariables);
-        this.getDateFields(project, dataset, table)
+        return this.getDateFields(project, dataset, table)
           .then((dateFields) => {
-            const tm = BigQueryDatasource._FindTimeField(tmpQ, dateFields);
+	  const tm = BigQueryDatasource._FindTimeField(tmpQ, dateFields);
+	    console.log("got time field", tm);
             this.queryModel.target.timeColumn = tm.text;
             this.queryModel.target.timeColumnType = tm.value;
             this.queryModel.target.table = table;
+	    
+            this.queryModel.target.rawSql = query.rawSql;
+            modOptions = BigQueryDatasource._setupTimeShiftQuery(query, options);
+            const q = this.setUpQ(modOptions, options, query);
+            console.log(q);
+            return this.doQuery(q, options.panelId + query.refId, query.queryPriority).then((response) => {
+                return ResponseParser.parseDataQuery(response, query.format);
+	    });
           })
           .catch((err) => {
             console.log(err);
           });
-        this.queryModel.target.rawSql = query.rawSql;
-        modOptions = BigQueryDatasource._setupTimeShiftQuery(query, options);
-        const q = this.setUpQ(modOptions, options, query);
-        console.log(q);
-        return this.doQuery(q, options.panelId + query.refId, query.queryPriority).then((response) => {
-          return ResponseParser.parseDataQuery(response, query.format);
-        });
+
       }
     });
     return this.$q.all(allQueryPromise).then((responses): any => {
