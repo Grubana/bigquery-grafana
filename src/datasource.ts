@@ -252,14 +252,10 @@ export class BigQueryDatasource {
       } else {
         // Fix raw sql
         const sqlWithNoVariables = this.templateSrv.replace(tmpQ, options.scopedVars, this.interpolateVariable);
-        const [project, dataset, table] = BigQueryDatasource._extractFromClause(sqlWithNoVariables);
-        return this.getDateFields(project, dataset, table)
-          .then((dateFields) => {
-	  const tm = BigQueryDatasource._FindTimeField(tmpQ, dateFields);
-	    console.log("got time field", tm);
-            this.queryModel.target.timeColumn = tm.text;
-            this.queryModel.target.timeColumnType = tm.value;
-            this.queryModel.target.table = table;
+        const info = BigQueryDatasource._extractFromClause(sqlWithNoVariables);
+            this.queryModel.target.timeColumn = null;
+            this.queryModel.target.timeColumnType = "DATETIME";
+            this.queryModel.target.table = info[2];
 	    
             this.queryModel.target.rawSql = query.rawSql;
             modOptions = BigQueryDatasource._setupTimeShiftQuery(query, options);
@@ -268,10 +264,6 @@ export class BigQueryDatasource {
             return this.doQuery(q, options.panelId + query.refId, query.queryPriority).then((response) => {
                 return ResponseParser.parseDataQuery(response, query.format);
 	    });
-          })
-          .catch((err) => {
-            console.log(err);
-          });
 
       }
     });
